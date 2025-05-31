@@ -1,0 +1,466 @@
+--- START OF FILE code (final_modified).html ---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Attendance Report - Dynamic Count & Total (Name Color by Status)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      padding: 15px;
+      font-size: 13px;
+      color: #333; /* Default text color */
+    }
+    h2 {
+      text-align: center;
+      color: #003366;
+      font-size: 16px;
+      margin: 5px 0;
+    }
+     .top-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+    .top-controls > * {
+      flex: 1;
+      min-width: 160px;
+    }
+    textarea {
+      width: 100%;
+      height: 140px;
+      padding: 6px;
+      font-size: 13px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      padding: 6px 14px;
+      border: none;
+      font-size: 13px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 10px 4px 15px 0;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .report-box {
+      padding: 15px;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 0 3px rgba(0,0,0,0.15);
+      overflow-x: auto; /* Add horizontal scroll if table is too wide */
+      /* Important: for PDF, avoid wrapping the main content div */
+      page-break-inside: avoid !important;
+    }
+    .logo {
+      max-height: 50px;
+      margin-bottom: 5px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* --- Styles for the Table Layout with Auto Columns --- */
+    table {
+      width: 100%; /* Try to use full width available */
+      border-collapse: collapse;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      background: #fff;
+      font-size: 12px;
+      table-layout: auto; /* Allow column widths to adjust based on content */
+      page-break-inside: avoid !important; /* Help prevent page breaks inside table */
+    }
+
+    th, td {
+      border: 1px solid #000; /* Darker border */
+      padding: 4px; /* Reduced padding */
+      text-align: left;
+      vertical-align: top;
+      word-wrap: break-word; /* Allow text wrapping within cells */
+    }
+
+    /* Header styles */
+    thead th {
+        font-weight: bold;
+        text-align: center;
+        background-color: #f8f9fa; /* Light gray default */
+    }
+
+    /* --- Darker Header Colors --- */
+    thead tr:first-child th:first-child { /* HOUSE KEEPERS */
+        background-color: #ff9800; /* Darker Orange */
+        color: #000;
+    }
+    thead tr:first-child th:last-child { /* SCAVENGERS */
+        background-color: #0056b3; /* Darker Blue */
+        color: white;
+    }
+    /* -------------------------- */
+
+    /* --- Column Width Hints (using min-width for smaller columns, names are auto) --- */
+    table th:nth-child(1), /* S.NO. - Sweepers */
+    table td:nth-child(1),
+    table th:nth-child(5), /* S.NO. - Scavengers */
+    table td:nth-child(5) {
+        min-width: 35px; /* Minimum width for S.NO column */
+        text-align: center;
+    }
+     table th:nth-child(3), /* HOSTEL - Sweepers */
+     table td:nth-child(3),
+     table th:nth-child(7), /* HOSTEL - Scavengers */
+     table td:nth-child(7) {
+        min-width: 50px; /* Minimum width for Hostel column */
+         text-align: center; /* Center hostel */
+     }
+     table th:nth-child(4), /* STATUS - Sweepers */
+     table td:nth-child(4),
+     table th:nth-child(8), /* STATUS - Scavengers */
+     table td:nth-child(8) {
+        min-width: 70px; /* Minimum width for Status column */
+         text-align: center; /* Center status */
+     }
+     /* Name columns (2 and 6) will automatically take remaining space based on content */
+
+    /* --- Style for Names (Bold, Color applied via inline style) --- */
+    tbody tr td:nth-child(2), /* House Keepers Name column */
+    tbody tr td:nth-child(6) { /* Scavengers Name column */
+        font-weight: bold;
+    }
+    /* ----------------------------------- */
+
+    /* --- Alternating row colors --- */
+    tbody tr:nth-child(odd) {
+        background-color: #f8d7da40; /* Light pinkish with transparency */
+    }
+     tbody tr:nth-child(even) {
+        background-color: #fff; /* White */
+    }
+    /* ----------------------------------- */
+
+
+    /* Summary row styles (Darker Green background) */
+    .summary-row {
+        background-color: #a3cfbb !important; /* Darker Green */
+        font-weight: bold;
+    }
+    .summary-row td {
+         padding: 5px; /* Slightly more padding for summary rows */
+         color: #000; /* Ensure summary text is also dark */
+         vertical-align: middle; /* Vertically center text in summary cells */
+    }
+    /* Adjust alignment for labels vs numbers in summary rows */
+    .summary-row td:nth-child(2), /* The label cell with colspan="2" for Sweepers */
+    .summary-row td:nth-child(6) { /* The label cell with colspan="2" for Scavengers */
+         text-align: right;
+         padding-right: 10px;
+    }
+     .summary-row td:nth-child(4), /* The number cell for Sweepers (corresponds to 4th column) */
+     .summary-row td:nth-child(8) { /* The number cell for Scavengers (corresponds to 8th column) */
+         text-align: center; /* Center align the numbers */
+    }
+
+
+    .footer {
+      text-align: center;
+      margin-top: 10px;
+      font-style: italic;
+      font-size: 13px;
+       page-break-before: avoid; /* Avoid break before footer */
+    }
+    label {
+      font-weight: bold;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-controls">
+    <div>
+      <label for="logoUpload">Upload Logo:</label>
+      <input type="file" id="logoUpload" accept="image/*" />
+    </div>
+    <div>
+      <label for="reportDate">Select Date:</label>
+      <input type="date" id="reportDate" />
+    </div>
+    <div>
+      <label for="pageSize">Page Size:</label>
+      <select id="pageSize">
+        <option value="a4">A4</option>
+        <option value="a5">A5</option>
+         <option value="a3">A3</option> <!-- Added A3 option for wider tables -->
+      </select>
+    </div>
+  </div>
+
+  <textarea id="inputText" placeholder="Paste attendance report here..."></textarea>
+
+  <button onclick="generateReport()">Generate Report</button>
+  <button onclick="downloadPDF()">Download PDF</button>
+
+  <div id="report" class="report-box" style="display:none;"></div>
+
+  <script>
+    const logoUpload = document.getElementById('logoUpload');
+    let logoDataURL = '';
+
+    logoUpload.addEventListener('change', function () {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        logoDataURL = e.target.result;
+      };
+      if (this.files[0]) {
+        reader.readAsDataURL(this.files[0]);
+      }
+    });
+
+   function parseAttendanceText(text) {
+        const data = {
+            sweepers: [],
+            scavengers: [],
+            summary: {
+                totalPresentSweepers: 0, // This will now be the count of names parsed
+                todayPresentSweepers: 0,
+                todayAbsentSweepers: 0,
+                todayVacantSweepers: 0, // This will be 0 unless 'VACANT' is literally in the input
+                totalPresentScavengers: 0, // This will now be the count of names parsed
+                todayPresentScavengers: 0,
+                todayAbsentScavengers: 0,
+                todayVacantScavengers: 0 // This will be 0 unless 'VACANT' is literally in the input
+            }
+        };
+
+        // Combined list approach based on input headers (Presentees list, Absentees list)
+        // Uses [\s\S]*? to match any character (including newlines) non-greedily
+        const presenteeSectionMatch = text.match(/Presentees list([\s\S]*?)(?:Absentees list|$)/i);
+        const presenteeSection = presenteeSectionMatch ? presenteeSectionMatch[1] : "";
+
+        const absenteeSectionMatch = text.match(/Absentees list([\s\S]*?)(?:Total Strength|$)/i);
+        const absenteeSection = absenteeSectionMatch ? absenteeSectionMatch[1] : "";
+
+        // Extract Sweepers and Scavengers from their respective sections within Presentees/Absentees
+        const presenteeSweepersMatch = presenteeSection.match(/Sweepers([\s\S]*?)(?:Scavengers|$)/i);
+        const presenteeSweeperText = presenteeSweepersMatch ? presenteeSweepersMatch[1] : "";
+
+        const presenteeScavengersMatch = presenteeSection.match(/Scavengers([\s\S]*|$)/i);
+        const presenteeScavengerText = presenteeScavengersMatch ? presenteeScavengersMatch[1] : "";
+
+         const absenteeSweepersMatch = absenteeSection.match(/Sweepers([\s\S]*?)(?:Scavengers|$)/i);
+        const absenteeSweeperText = absenteeSweepersMatch ? absenteeSweepersMatch[1] : "";
+
+        const absenteeScavengersMatch = absenteeSection.match(/Scavengers([\s\S]*|$)/i);
+        const absenteeScavengerText = absenteeScavengersMatch ? absenteeScavengersMatch[1] : "";
+
+
+        // Function to extract names from a block of text (e.g., "1. Name1\n2. Name2")
+         function extractNamesFromBlock(blockText) {
+             if (!blockText) return [];
+             // Match lines starting with optional whitespace, then number.dot, then capture the rest as name
+             return [...blockText.matchAll(/^\s*\d+\.\s*([^\n]+)/gm)].map(match => match[1].trim()).filter(name => name.length > 0);
+         }
+
+        // Get names from input text for Present and Absent lists
+        const presentSweepersNames = extractNamesFromBlock(presenteeSweeperText);
+        const presentScavengersNames = extractNamesFromBlock(presenteeScavengerText);
+        const absentSweepersNames = extractNamesFromBlock(absenteeSweeperText);
+        const absentScavengersNames = extractNamesFromBlock(absenteeScavengerText);
+
+
+        // Create combined list with status for each category, *only* including names found
+         const allSweepersData = [];
+         const allScavengersData = [];
+
+         // Add present sweepers
+         presentSweepersNames.forEach(name => allSweepersData.push({ name: name, status: 'PRESENT', hostel: '' }));
+         // Add absent sweepers (only if not already added as present - assumes input lists are distinct)
+          absentSweepersNames.forEach(name => {
+             // Check if the name is NOT already in the list (as a presentee)
+             if (!allSweepersData.some(item => item.name === name)) {
+                 allSweepersData.push({ name: name, status: 'ABSENT', hostel: '' });
+             }
+          });
+
+          // Add present scavengers
+         presentScavengersNames.forEach(name => allScavengersData.push({ name: name, status: 'PRESENT', hostel: '' }));
+          // Add absent scavengers (only if not already added as present)
+          absentScavengersNames.forEach(name => {
+             // Check if the name is NOT already in the list (as a presentee)
+              if (!allScavengersData.some(item => item.name === name)) {
+                 allScavengersData.push({ name: name, status: 'ABSENT', hostel: '' });
+             }
+          });
+
+        // --- Calculate Summary Counts based on the actual names parsed ---
+         data.summary.todayPresentSweepers = allSweepersData.filter(p => p.status === 'PRESENT').length;
+         data.summary.todayAbsentSweepers = allSweepersData.filter(p => p.status === 'ABSENT').length;
+         data.summary.todayVacantSweepers = allSweepersData.filter(p => p.name === 'VACANT').length; // Count literal 'VACANT' entries
+         data.summary.totalPresentSweepers = allSweepersData.length; // Total number of entries (Present + Absent + literal VACANT)
+
+
+         data.summary.todayPresentScavengers = allScavengersData.filter(p => p.status === 'PRESENT').length;
+         data.summary.todayAbsentScavengers = allScavengersData.filter(p => p.status === 'ABSENT').length;
+         data.summary.todayVacantScavengers = allScavengersData.filter(p => p.name === 'VACANT').length; // Count literal 'VACANT' entries
+         data.summary.totalPresentScavengers = allScavengersData.length; // Total number of entries (Present + Absent + literal VACANT)
+
+
+        return {
+             sweepers: allSweepersData, // Now contains only names from input
+             scavengers: allScavengersData, // Now contains only names from input
+             summary: data.summary
+        };
+    }
+
+
+    function generateReport() {
+      const text = document.getElementById("inputText").value;
+      const reportDiv = document.getElementById("report");
+      const date = document.getElementById("reportDate").value || new Date().toISOString().split('T')[0];
+      reportDiv.innerHTML = ""; // Clear previous report
+
+      const attendanceData = parseAttendanceText(text);
+      const sweepers = attendanceData.sweepers;
+      const scavengers = attendanceData.scavengers;
+      const summary = attendanceData.summary;
+
+      // --- Build HTML ---
+      let reportContentHtml = '';
+
+      // Logo and Heading
+      if (logoDataURL) {
+        reportContentHtml += `<img src="${logoDataURL}" class="logo" />`;
+      }
+      reportContentHtml += `<h2>SRM CAMPUS RAMAPURAM<br>BOYS HOSTEL-2 H.K ATTENDANCE REPORT</h2>`; /* Modified Heading */
+      reportContentHtml += `<p style="text-align:center;font-weight:bold;">${date}</p>`; /* Using date directly */
+
+
+      // --- Generate the Single Table ---
+      reportContentHtml += `<table>`;
+
+      // Table Header
+      reportContentHtml += `<thead>`;
+      // Added dynamic counts to the main headers
+      reportContentHtml += `<tr>
+                                <th colspan="4">HOUSE KEEPERS (${sweepers.length})</th>
+                                <th colspan="4">SCAVENGERS (${scavengers.length})</th>
+                             </tr>`;
+      reportContentHtml += `<tr>
+                                <th>S.NO.</th><th>HOUSE KEEPERS</th><th>HOSTEL</th><th>PRESENT OR ABSENT</th>
+                                <th>S.NO.</th><th>SCAVENGERS</th><th>HOSTEL</th><th>PRESENT OR ABSENT</th>
+                             </tr>`;
+      reportContentHtml += `</thead>`;
+
+      // Table Body
+      reportContentHtml += `<tbody>`;
+
+      // Determine max rows based on the actual number of names parsed
+      const maxRows = Math.max(sweepers.length, scavengers.length);
+
+      for (let i = 0; i < maxRows; i++) {
+          const sweeper = sweepers[i]; // Might be undefined if scavengers list is longer
+          const scavenger = scavengers[i]; // Might be undefined if sweepers list is longer
+
+          reportContentHtml += `<tr>`; /* Start new row */
+
+          // Sweepers Column Group
+          if (sweeper) {
+              reportContentHtml += `<td>${i + 1}</td>`;
+               // --- Apply color style based on status/name ---
+              let cellStyle = ''; // Use cellStyle as it applies to name and status cells
+              if (sweeper.status === 'PRESENT') {
+                  cellStyle = 'color: #28a745;'; /* Green */
+              } else if (sweeper.status === 'ABSENT') {
+                  cellStyle = 'color: #dc3545;'; /* Red */
+              } else if (sweeper.name === 'VACANT') { // Style specifically for names that are literally 'VACANT'
+                   cellStyle = 'color: #6c757d;'; /* Gray */
+              }
+              reportContentHtml += `<td style="${cellStyle}">${sweeper.name}</td>`; // Apply style to Name cell
+              reportContentHtml += `<td>${sweeper.hostel}</td>`; // Hostel is empty based on input text
+              reportContentHtml += `<td style="${cellStyle}">${sweeper.status}</td>`; // Apply style to Status cell
+          } else {
+               // Fill with empty cells if sweeper list is shorter
+               reportContentHtml += `<td>${i + 1}</td><td></td><td></td><td></td>`;
+          }
+
+
+          // Scavengers Column Group
+          if (scavenger) {
+              reportContentHtml += `<td>${i + 1}</td>`;
+              // --- Apply color style based on status/name ---
+               let cellStyle = ''; // Use cellStyle for scavengers too
+              if (scavenger.status === 'PRESENT') {
+                  cellStyle = 'color: #28a745;'; /* Green */
+              } else if (scavenger.status === 'ABSENT') {
+                  cellStyle = 'color: #dc3545;'; /* Red */
+              } else if (scavenger.name === 'VACANT') { // Style specifically for names that are literally 'VACANT'
+                   cellStyle = 'color: #6c757d;'; /* Gray */
+              }
+              reportContentHtml += `<td style="${cellStyle}">${scavenger.name}</td>`; // Apply style to Name cell
+              reportContentHtml += `<td>${scavenger.hostel}</td>`; // Hostel is empty based on input text
+              reportContentHtml += `<td style="${cellStyle}">${scavenger.status}</td>`; // Apply style to Status cell
+          } else {
+              // Fill with empty cells if scavenger list is shorter
+               reportContentHtml += `<td>${i + 1}</td><td></td><td></td><td></td>`;
+          }
+
+          reportContentHtml += `</tr>`; /* End row */
+      }
+
+      // Summary Rows
+      reportContentHtml += `<tr class="summary-row">
+                                <td></td><td colspan="2">TOTAL COUNT</td><td>${summary.totalPresentSweepers}</td>
+                                <td></td><td colspan="2">TOTAL COUNT</td><td>${summary.totalPresentScavengers}</td>
+                             </tr>`;
+       reportContentHtml += `<tr class="summary-row">
+                                <td></td><td colspan="2">TODAY PRESENT</td><td>${summary.todayPresentSweepers}</td>
+                                <td></td><td colspan="2">TODAY PRESENT</td><td>${summary.todayPresentScavengers}</td>
+                             </tr>`;
+       reportContentHtml += `<tr class="summary-row">
+                                <td></td><td colspan="2">TODAY ABSENT</td><td>${summary.todayAbsentSweepers}</td>
+                                <td></td><td colspan="2">TODAY ABSENT</td><td>${summary.todayAbsentScavengers}</td>
+                             </tr>`;
+       // Corrected typo from VACENT to VACANT and adjusted summary count
+       reportContentHtml += `<tr class="summary-row">
+                                <td></td><td colspan="2">TODAY VACANT</td><td>${summary.todayVacantSweepers}</td>
+                                <td></td><td colspan="2">TODAY VACANT</td><td>${summary.todayVacantScavengers}</td>
+                             </tr>`;
+
+      reportContentHtml += `</tbody>`;
+      reportContentHtml += `</table>`;
+      // --- End Table ---
+
+
+      reportContentHtml += `<div class="footer">Prepared by: SSO Vettrivel</div>`; /* Keep footer */
+
+      reportDiv.innerHTML = reportContentHtml;
+      reportDiv.style.display = 'block';
+    }
+
+    function downloadPDF() {
+      const report = document.getElementById("report");
+      const size = document.getElementById("pageSize").value;
+      const opt = {
+        margin: 0.3, /* Adjusted margin */
+        filename: `Attendance_Report_${document.getElementById("reportDate").value || new Date().toISOString().split('T')[0]}.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: size, orientation: 'portrait' }, /* Confirmed portrait */
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+      html2pdf().set(opt).from(report).save();
+    }
+
+  </script>
+</body>
+</html>
+--- END OF FILE code (final_modified).html ---
