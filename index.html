@@ -127,12 +127,6 @@
     .summary-row td:nth-child(8) {
       text-align: center;
     }
-    .footer {
-      text-align: center;
-      margin-top: 10px;
-      font-style: italic;
-      font-size: 13px;
-    }
     label {
       font-weight: bold;
       font-size: 13px;
@@ -239,6 +233,12 @@
       const { sweepers, scavengers, summary } = parseAttendanceText(text);
 
       let html = '';
+      html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <div></div>
+                <div style="font-size: 12px; font-style: italic; text-align: right;">
+                  Prepared by: SSO K. Vettrivelan
+                </div>
+              </div>`;
       if (logoDataURL) html += `<img src="${logoDataURL}" class="logo" />`;
       html += `<h2>SRM CAMPUS RAMAPURAM<br>BOYS HOSTEL-2 H.K ATTENDANCE REPORT</h2>`;
       html += `<p style="text-align:center;font-weight:bold;">${date}</p>`;
@@ -280,7 +280,7 @@
           <td></td><td colspan="2">TODAY VACANT</td><td>${summary.todayVacantScavengers}</td></tr>
       `;
 
-      html += `</tbody></table><div class="footer">Prepared by: SSO Vettrivel</div>`;
+      html += `</tbody></table>`;
       reportDiv.innerHTML = html;
       reportDiv.style.display = 'block';
     }
